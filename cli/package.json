@@ -1,0 +1,41 @@
+{
+    "name": "@mergehez/cli",
+    "version": "0.0.9",
+    "description": "personal productivity tools for laravel/vue development!",
+    "author": "mergehez <argesozdogan@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mergehez/node-tools.git"
+    },
+    "homepage": "https://github.com/mergehez/node-tools/cli",
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "bin": {
+        "ftp-deploy": "dist/ftp-deploy.mjs",
+        "git-switch": "dist/git-switch.mjs"
+    },
+    "scripts": {
+        "build": "rm -rf dist && node build.mjs"
+    },
+    "devDependencies": {
+        "@types/node": "^20.8.9",
+        "@types/prompt-sync": "^4.2.2",
+        "esbuild": "0.16.10",
+        "ignore": "^5.2.4",
+        "php-parser": "^3.1.5"
+    },
+    "dependencies": {
+        "chalk": "^5.3.0",
+        "prompt-sync": "^4.2.0",
+        "typescript": "^5.0.2"
+    }
+}
