@@ -36,14 +36,16 @@ export function findInDir(dir: string, onFound: (p:string, s:fs.Stats) => void, 
 }
 
 export function getIgnores(){
-    const foldersForCustomIgnores = ['/', deployerPathBase];
-    let ignores = defaultIgnores.split('\n');
-    for (const f of foldersForCustomIgnores) {
-        if(fs.existsSync(path.join(f, '.ftpignore')))
-            ignores = [...ignores, ...fs.readFileSync(path.join(f, '.ftpignore')).toString().split('\n')]
+    if(!fs.existsSync('./.ftpignore')){
+        console.log('created default ".ftpignore" file in the root directory. Have a look, edit if necessary and start again!');
+        fs.writeFileSync('./.ftpignore', defaultIgnores);
+        process.exit(1);
     }
-
-    return ignore().add(ignores.map(t=>t.trim()).filter(t => t.length > 0 && !t.startsWith('#')));
+    const ignores = fs.readFileSync('./.ftpignore').toString()
+                    .split('\n')
+                    .map(t=>t.trim())
+                    .filter(t => t.length > 0 && !t.startsWith('#'));
+    return ignore().add(ignores);
 }
 
 export function getFtpInfo(){

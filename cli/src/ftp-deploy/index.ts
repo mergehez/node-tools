@@ -6,6 +6,7 @@ import {deployerPathData, deployerPathManifest, findInDir, getFtpInfo, getIgnore
 import chalk from 'chalk';
 import { runShell } from '../cli_utils';
 
+const ignores = getIgnores();
 const ftp = getFtpInfo();
 
 runShell('php artisan route:cache || exit 2', chalk.blue('- artisan route:cache'));
@@ -32,7 +33,6 @@ try {
 
 const newFiles:Manifest = {};
 
-const ignores = getIgnores();
 findInDir('./', (path, stat) => {
     newFiles[path] = {
         size: stat.size, 
@@ -77,6 +77,11 @@ for (const src in newFiles) {
 if(Object.keys(newFiles).length === 0){
     console.log(chalk.red('\n There is no new file!'));
     process.exit();
+}
+
+if(process.argv.includes('--dry-run')){
+    console.log('end of dry-run!');
+    process.exit(0);
 }
 
 fs.writeFileSync(deployerPathManifest + '.tmp', JSON.stringify(newFiles, null, 2));
