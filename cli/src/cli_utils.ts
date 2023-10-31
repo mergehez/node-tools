@@ -29,20 +29,32 @@ export function runShell(
 }
 
 
-export function parseEnv(prefix:string, exitIfNoEnv = true){
+export function parseEnv(prefix:string, exitIfNoEnv = true, removePrefix = false){
     if(!fs.existsSync('./.env')){
         console.log(chalk.red('No .env file found!'));
         return exitIfNoEnv ? process.exit(1) : null;
     }
-
-    return parseYaml(fs.readFileSync('./.env').toString(), prefix)
+    return parseYaml(fs.readFileSync('./.env').toString(), prefix, removePrefix);
 }
 
-export function parseYaml(content: string, prefix: string){
-    return content.split('\n')
-                .filter(t => t.startsWith(prefix))
-                .reduce((obj: any, t) => {
-                    obj[t.split('=')[0]] = t.substring(t.indexOf('=')+1)
-                    return obj;
-                }, {});
+export function validateEnvRecord(obj: Record<Lowercase<string>, string>, prefix: string, keys: string[]){
+    for(const key of keys){
+        if(!(key in obj)){
+            console.log(chalk.red(prefix + key.toUpperCase() + ' was not found in .env file!'));
+            process.exit(1);
+        }
+    }
+}
+
+export function parseYaml(content: string, prefix: string, removePrefix = false) : Record<Lowercase<string>, string>{
+    let lines = content.split('\n')
+                    .filter(t => t.startsWith(prefix));
+
+    if(removePrefix)
+        lines = lines.map(t => t.substring(prefix.length))
+
+    return lines.reduce((obj: any, t) => {
+                obj[t.split('=')[0].toLocaleLowerCase()] = t.substring(t.indexOf('=')+1)
+                return obj;
+            }, {});
 }

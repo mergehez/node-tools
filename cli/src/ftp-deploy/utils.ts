@@ -5,6 +5,7 @@ import ignore from 'ignore';
 import defaultIgnores from './default.ftpignore';
 import path from 'node:path';
 import { execSync } from 'child_process';
+import { parseEnv, parseEnvToLines, validateEnvRecord } from '../cli_utils';
 
 export const deployerPathBase = './storage/deployer/';
 export const deployerPathData = deployerPathBase + 'data/';
@@ -14,6 +15,12 @@ export type Manifest = Record<string, {
     size: number,
     isSymLink?: boolean,
 }>
+export type FtpInfo = { 
+    server: string, 
+    username: string, 
+    password: string, 
+    target_basepath: string 
+}
 
 export function findInDir(dir: string, onFound: (p:string, s:fs.Stats) => void, exclude?: (path:string, name:string, stat:fs.Stats) => boolean) {
     dir = dir.replace(/\\/gi, "/");
@@ -49,26 +56,18 @@ export function getIgnores(){
 }
 
 export function getFtpInfo(){
-    if(!fs.existsSync('./.env')){
-        console.log(chalk.red('No .env file found!'));
-        process.exit(1);
-    }
-    const env = fs.readFileSync('./.env').toString().split('\n').filter(t => t.startsWith('FTP_')).map(t => t.substring(4));
-    const ftp = {};
-    for (const e of env) {
-        const x = e.toLocaleLowerCase().split('=');
-        ftp[x[0]] = e.substring(e.indexOf('=')+1);
-    }
-    for(const key of ['username', 'password', 'server', 'target_basepath']){
-        if(!(key in ftp)){
-            console.log(chalk.red('FTP_'+key.toUpperCase() + ' was not found in .env file!'));
-            process.exit(1);
-        }
-    }
-    return ftp as {
-        username: string,
-        password: string,
-        server: string,
-        target_basepath: string
-    };
+    const ftp = parseEnv('FTP_', false, true);
+    validateEnvRecord(ftp, 'FTP_', ['username', 'password', 'server', 'target_basepath']);
+    return ftp as FtpInfo;
+}
+
+export function getSshInfo(ftpInfo : FtpInfo): FtpInfo|null {
+    const ssh = parseEnv('SSH_', false, true);
+    if('username' in ssh == false || 'password' in ssh == false)
+        return null;
+
+    if('server' in ssh == false)
+        ssh['server'] = ftpInfo.server;
+    ssh['target_basepath'] = ftpInfo.target_basepath;
+    return ssh as FtpInfo;
 }
