@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import fsPath from 'node:path';
+import chalk, { ColorName as LogColor, foregroundColorNames as logColors} from 'chalk';
 
 export function findInDir(dir: string, onFound: (p:string, s:fs.Stats) => void, exclude?: (path:string, name:string, stat:fs.Stats) => boolean) {
     dir = dir.replace(/\\/gi, "/");
@@ -20,3 +21,26 @@ export function findInDir(dir: string, onFound: (p:string, s:fs.Stats) => void, 
         onFound(path, stat);
     }
 }
+
+export function stringFormat(str: string, args: string[]) {
+    return str.replace(/{(\d+)}/g, (match, index) => args[index] || `{${index}}`);
+}
+
+export function log(message: string, color?: LogColor){
+    message ??= '';
+    message = message.replace('\\n', '\n');
+    if(color)
+        return console.log(chalk[color](message));
+
+    if(!message.includes('|'))
+        return console.log(message);
+
+    const f = message.split('|');
+    color = logColors.find(t => t == f[0]);
+    return log(message.substring(f[0].length+1), color);
+}
+
+export const logError = (message: any) => log(message, 'red');
+export const logSuccess = (message: any) => log(message, 'green');
+export const logWarning = (message: any) => log(message, 'yellow');
+export const logInfo = (message: any) => log(message, 'blue');

@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import fs from 'node:fs';
 import { execSync } from "child_process";
+import { log, logError } from "../../shared/src/helpers";
 
 export function runShell(
     cmd: string, 
@@ -9,7 +10,12 @@ export function runShell(
     returnContent = false
 ){
     if(message)
-        console.log(message);
+        log(message);
+
+    if(process.argv.includes('--act')){
+        log(`->ACT runShell: ${cmd}`, 'cyan')
+        return;
+    }
     try {
         const res = execSync(cmd, {stdio: returnContent ? 'pipe' :'inherit'});
         if(returnContent)
@@ -22,7 +28,7 @@ export function runShell(
             console.log(err);
         }
         if(!returnContent)
-            console.log(chalk.red("failed with status " + err.status))
+            logError("failed with status " + err.status)
         throw err;
         // process.exit(err.status);
     }

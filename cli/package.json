@@ -1,6 +1,6 @@
 {
     "name": "@mergehez/cli",
-    "version": "0.0.15",
+    "version": "0.0.18",
     "description": "personal productivity tools for laravel/vue development!",
     "author": "mergehez <argesozdogan@gmail.com>",
     "license": "MIT",
@@ -36,10 +36,10 @@
     },
     "dependencies": {
         "chalk": "^5.3.0",
-        "file-saver": "^2.0.5",
         "jszip": "^3.10.1",
         "node-ssh": "^13.1.0",
         "prompt-sync": "^4.2.0",
-        "typescript": "^5.0.2"
+        "typescript": "^5.0.2",
+        "yaml": "^2.3.4"
     }
 }

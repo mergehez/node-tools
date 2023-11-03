@@ -36,7 +36,7 @@ await build({
         {
             name: "ImportFtpIgnorePlugin",
             setup(build) {
-                build.onLoad({ filter: /\.ftpignore$/ }, async (args) => {
+                build.onLoad({ filter: /ftp-deploy\.yml$/ }, async (args) => {
                     return { loader: "text", contents: readFileSync(args.path).toString() }
                 })
             }
