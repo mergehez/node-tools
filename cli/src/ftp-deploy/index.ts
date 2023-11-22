@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import chalk from "chalk";
-import JSZip from "jszip";
+import AdmZip from "adm-zip";
 import fs from 'node:fs'
 import fsPath from 'node:path'
 import ignore, { Ignore } from 'ignore';
@@ -22,9 +22,6 @@ var startTime = performance.now()
 let lastFiles: Manifest | undefined;
 let newFiles: Manifest = {};
 let ssh: NodeSSH | undefined;
-
-
-var myEval = eval;
 
 function prepareDeployer() {
     if (fs.existsSync(deployerPathData)) {
@@ -64,7 +61,7 @@ async function copyFilesToDeployer() {
 
     const distDirsPrinted = (config.dist_dirs ?? []).reduce((obj, v) => ({ ...obj, [v]: false }), {});
 
-    const zip = new JSZip();
+    const zip = new AdmZip();
     log('FILES TO UPLOAD:');
     for (const src in newFiles) {
         if (lastFiles && src in lastFiles) {
@@ -91,7 +88,7 @@ async function copyFilesToDeployer() {
 
         const dest = fsPath.join(deployerPathData, src);
         if (shouldZip) {
-            zip.file(src, fs.readFileSync(src).toString());
+            zip.addFile(src, fs.readFileSync(src));
         } else {
             if (!fs.existsSync(dest))
                 fs.mkdirSync(fsPath.parse(dest).dir, { recursive: true });
@@ -103,7 +100,7 @@ async function copyFilesToDeployer() {
         process.exit();
     }
     if (shouldZip) {
-        const buffer = await zip.generateAsync({ type: 'nodebuffer', streamFiles: true })
+        const buffer = await zip.toBuffer()
         fs.writeFileSync(path.join(deployerPathData, zipFileName), buffer);
         logInfo(`\n-> Created '${zipFileName}'.`);
     }
@@ -111,7 +108,7 @@ async function copyFilesToDeployer() {
 
 function checkDryRun() {
     if (process.argv.includes('--dry-run')) {
-        log('\n-> End of dry-run!');
+        logInfo('\n-> End of dry-run!');
         process.exit(0);
     }
 }
