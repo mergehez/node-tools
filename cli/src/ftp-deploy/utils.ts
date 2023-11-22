@@ -148,15 +148,23 @@ export async function runShellSsh(ssh: NodeSSH, cmd: string, ignoreErrors = fals
         log(chalk.cyan(`->ACT runShellSsh: ${cmd}`))
         return;
     }
-    await ssh.execCommand(cmd, {
-        onStderr: c => {
-            if (ignoreErrors)
-                return null;
-            logError(c.toString());
-            ssh.dispose();
-            process.exit(1);
-        }
-    });
+    try {
+        await ssh.execCommand(cmd, {
+            onStderr: c => {
+                if (ignoreErrors)
+                    return null;
+                logError(c.toString());
+                ssh.dispose();
+                process.exit(1);
+            }
+        });
+    } catch (error) {
+        if (ignoreErrors)
+            return;
+        logError(error.toString());
+        ssh.dispose();
+        process.exit(1);
+    }
 }
 
 export function formatCommand(config: Config, shell: StepShell) {
