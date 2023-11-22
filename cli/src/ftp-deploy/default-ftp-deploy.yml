@@ -16,10 +16,13 @@ config:
     - public/build
 
   ignores:
+    #no need after first deploy
+    - /vendor
+    - /bootstrap/cache
+    - .gitignore
+
     #folders
     - node_modules
-    - vendor
-    - /bootstrap/cache
     - /database
     - /tests
     - /example
@@ -38,7 +41,6 @@ config:
     - /*.*
     - public/hot
     - .DS_Store
-    - .gitignore
     - laravel.log
 
 steps: 
@@ -46,27 +48,35 @@ steps:
     # - shell:
     #     command: php artisan route:cache;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     # - shell:
     #     command: php artisan cache:clear;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     # - shell:
     #     command: php artisan config:clear;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     # - shell:
     #     command: php artisan view:clear;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     # - shell:
     #     command: php artisan optimize:clear;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     # - shell:
     #     command: php artisan debugbar:clear;
     #     message: blue|\n-> $command
+    #     ignore_stdout: true
     - shell:
         command: rm -r public/build;
         message: blue|\n-> Deleting dist on local machine
+        ignore_stdout: true
     - shell:
         command: npm run build || exit 2;
         message: blue|\n-> npm run build
+        ignore_error: true
         ignore_stdout: true
     - log: 
 
