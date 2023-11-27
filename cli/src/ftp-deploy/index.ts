@@ -4,7 +4,7 @@ import chalk from "chalk";
 import AdmZip from "adm-zip";
 import fs from 'node:fs'
 import fsPath from 'node:path'
-import ignore, { Ignore } from 'ignore';
+import ignore, { Ignore } from './ignore';
 import { Credentials, Manifest, PredefinedMethods, Step, deployerPathBase, deployerPathData, deployerPathManifest, findInDir, formatCommand, parseGlobalConfig, runShellSsh } from "./utils";
 import path from "node:path";
 import { NodeSSH } from "node-ssh";
