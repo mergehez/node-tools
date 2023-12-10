@@ -1,6 +1,6 @@
 {
     "name": "@mergehez/build",
-    "version": "0.0.6",
+    "version": "0.0.10",
     "description": "personal productivity tools for laravel/vue development!",
     "author": "mergehez <argesozdogan@gmail.com>",
     "license": "MIT",
@@ -12,6 +12,7 @@
     "files": [
         "dist"
     ],
+    "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
@@ -32,13 +33,13 @@
         "publishX" : "npm publish --access public"
     },
     "devDependencies": {
-        "@types/node": "^20.8.7",
+        "@types/node": "^20.10.4",
         "chalk": "^5.3.0",
-        "esbuild": "0.16.10",
-        "typescript": "^5.2.2"
+        "esbuild": "0.19.9",
+        "typescript": "^5.3.3"
     },
     "peerDependencies": {
-        "vite": "^4.4.5"
+        "vite": "^5.0.0"
     },
     "dependencies": {
         "@material-design-icons/svg": "^0.14.13"
