@@ -1,7 +1,7 @@
 {
     "name": "@mergehez/cli",
-    "version": "0.0.23",
-    "description": "personal productivity tools for laravel/vue development!",
+    "version": "0.0.31",
+    "description": "personal productivity tools for laravel/vue/.net development!",
     "author": "mergehez <argesozdogan@gmail.com>",
     "license": "MIT",
     "repository": {
@@ -21,25 +21,37 @@
     },
     "bin": {
         "ftp-deploy": "dist/ftp-deploy.mjs",
-        "git-switch": "dist/git-switch.mjs"
+        "git-switch": "dist/git-switch.mjs",
+        "img-resize": "dist/img-resize.mjs"
     },
     "scripts": {
-        "build": "rm -rf dist && node build.mjs"
+        "build": "rm -rf dist && node build.mjs",
+        "publish": "npm run build && npm publish && npm update --global @mergehez/cli && npm view @mergehez/cli version",
+        "test-ftp-deploy": "npm run build && node dist/ftp-deploy.mjs --fresh --config='./ftp-deploy.yml'",
+        "test-img-resize": "npm run build && node dist/img-resize.mjs -i='[0-9]+.jpg' -o='[name]-thumbnail.jpg' -s=0.9 --max-size=1024/2"
     },
     "devDependencies": {
+        "@hyrious/esbuild-plugin-commonjs": "^0.2.4",
         "@types/adm-zip": "^0.5.5",
         "@types/file-saver": "^2.0.6",
         "@types/node": "^20.8.9",
         "@types/prompt-sync": "^4.2.2",
+        "@types/prompts": "^2.4.9",
+        "@types/yargs": "^17.0.32",
         "esbuild": "0.16.10",
-        "php-parser": "^3.1.5"
-    },
-    "dependencies": {
+        "mlly": "^1.6.1",
+        "php-parser": "^3.1.5",
+        "prompt-sync": "^4.2.0",
+        "prompts": "^2.4.2",
+        "sharp": "^0.33.2",
         "adm-zip": "^0.5.10",
         "chalk": "^5.3.0",
+        "math-expression-evaluator": "^2.0.5",
         "node-ssh": "^13.1.0",
-        "prompt-sync": "^4.2.0",
         "typescript": "^5.0.2",
-        "yaml": "^2.3.4"
+        "yaml": "^2.3.4",
+        "yargs": "^17.7.2"
+    },
+    "dependencies": {
     }
 }

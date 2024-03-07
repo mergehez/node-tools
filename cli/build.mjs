@@ -9,7 +9,6 @@ const sharedConfig = {
     minify: false,
     platform: 'node',
     format: 'esm',
-
     external: [
         ...Object.keys(pkg.dependencies),
         ...Object.keys(pkg.peerDependencies || {})
@@ -30,16 +29,23 @@ await build({
 
 await build({
     ...sharedConfig,
+    outfile: "dist/img-resize.mjs",
+    entryPoints: ["src/img-resize/index.ts"],
+});
+
+await build({
+    ...sharedConfig,
     outfile: "dist/ftp-deploy.mjs",
     entryPoints: ["src/ftp-deploy/index.ts"],
     plugins: [ 
         {
             name: "ImportFtpIgnorePlugin",
             setup(build) {
-                build.onLoad({ filter: /ftp-deploy\.yml$/ }, async (args) => {
+                build.onLoad({ filter: /ftp-deploy-(.*)\.yml$/ }, async (args) => {
                     return { loader: "text", contents: readFileSync(args.path).toString() }
                 })
             }
         },
     ],
+    external: ["node-ssh"]
 });

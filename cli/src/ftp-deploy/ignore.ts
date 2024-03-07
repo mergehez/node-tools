@@ -407,13 +407,10 @@ const checkPath = (path, originalPath, doThrow) => {
 
     return true
 }
+checkPath.isNotRelative = (path: string) => REGEX_TEST_INVALID_PATH.test(path)
+checkPath.convert = (p: any) => p
 
-const isNotRelative = path => REGEX_TEST_INVALID_PATH.test(path)
-
-checkPath.isNotRelative = isNotRelative
-checkPath.convert = p => p
-
-class Ignore {
+export class Ignore {
     private _rules: IgnoreRule[]
     private _ignoreCase: boolean
     private _allowRelativePaths: boolean
@@ -598,7 +595,7 @@ class Ignore {
     }
 }
 
-const factory = options => new Ignore(options)
+const factory = (options?: { ignorecase?: boolean; ignoreCase?: any; allowRelativePaths?: boolean }) => new Ignore(options)
 
 const isPathValid = path =>
     checkPath(path && checkPath.convert(path), path, RETURN_FALSE)
@@ -608,7 +605,9 @@ factory.isPathValid = isPathValid
 // Fixes typescript
 factory.default = factory
 
-module.exports = factory
+export default factory
+
+// module.exports = factory
 
 // Windows
 // --------------------------------------------------------------
@@ -634,5 +633,5 @@ if (
     const REGIX_IS_WINDOWS_PATH_ABSOLUTE = /^[a-z]:\//i
     checkPath.isNotRelative = path =>
         REGIX_IS_WINDOWS_PATH_ABSOLUTE.test(path)
-        || isNotRelative(path)
+        || REGEX_TEST_INVALID_PATH.test(path)
 }

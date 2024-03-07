@@ -1,15 +1,13 @@
 import fs from 'node:fs';
 import fsPath from 'node:path'
+import prompts from 'prompts'
 import chalk from 'chalk';
-import defaultGlobalConfig from './default-ftp-deploy.yml';
+import defaultConfigIIS from './default-ftp-deploy-iis.yml';
+import defaultConfigLaravel from './default-ftp-deploy-laravel.yml';
 import YAML from 'yaml'
 import { NodeSSH } from 'node-ssh';
 import { parseEnv } from '../cli_utils';
-import { log, logError, logInfo, logWarning, stringFormat } from '../../../shared/src/helpers';
-
-export const deployerPathBase = './storage/deployer/';
-export const deployerPathData = deployerPathBase + 'data/';
-export const deployerPathManifest = deployerPathBase + 'manifest.json';
+import { log, logError, logInfo, logSuccess, logWarning, stringFormat } from '../../../shared/src/helpers';
 
 const predefinedMethods = <const>[
     'local:prepare_deployer',
@@ -19,12 +17,17 @@ const predefinedMethods = <const>[
     'local:save_deployer_status_tmp',
     'server:delete_dist_dirs',
     'local:upload_files',
+    'local:sleep',
+    'server:restart_iis_site',
     'server:unzip',
     'server:delete_zip',
     'local:dispose_ssh',
     'local:finish'
 ];
-export type PredefinedMethods = typeof predefinedMethods[number];
+
+export type PredefinedMethods = typeof predefinedMethods[number] | ({
+    method: typeof predefinedMethods[number],
+} & Record<string, string>);
 
 
 export type Manifest = Record<string, {
@@ -51,80 +54,190 @@ export type StepShell = {
 }
 
 export type Step = { predefined: PredefinedMethods }
-                 | { shell: StepShell }
-                 | { log: string }
-                 | { ssh_shell: StepShell };
+    | { shell: StepShell }
+    | { log: string }
+    | { ssh_shell: StepShell };
 
+export const ProjectTypes = {
+    iis: 'iis',
+    laravel: 'laravel',
+}
+
+export type ProjectType = keyof typeof ProjectTypes;
 export type Config = {
     host: string,
+    deployer_basepath?: string,
+    source_basepath?: string,
     target_basepath: string,
     ftp: Credentials,
     ssh?: Credentials,
     zip?: 'always' | 'if_ssh',
     dist_dirs?: string[],
     ignores: string[],
-}
+    project_type?: ProjectType,
+} & Record<string, string>;
+
 export type DeployYaml = {
     config: Config,
-    steps: {
-        local: Step[],
-        server: Step[],
+    steps: Step[],
+    deployer: {
+        path_base: string,
+        path_data: string,
+        path_manifest: string,
     }
 }
-
-export function parseGlobalConfig() {
-    if (!fs.existsSync('ftp-deploy.yml')) {
-        const ftp = getFtpInfoFromEnv();
-        const ssh = getSshInfoFromEnv(ftp);
-        const content = defaultGlobalConfig
-            .replace('$SERVER$', ftp?.server || '')
-            .replace('$TARGET_BASEPATH$', ftp?.target_basepath || '')
-            .replace('$FTP_USERNAME$', ftp?.username || '')
-            .replace('$FTP_PASSWORD$', ftp?.password || '')
-            .replace('$SSH_USERNAME$', ssh?.username || '')
-            .replace('$SSH_PASSWORD$', ssh?.password || '');
-        fs.writeFileSync('ftp-deploy.yml', content);
-        logInfo('\ncreated default "ftp-deploy.yml" file in the root directory. Have a look, edit if necessary and start again!');
-        logWarning('Do NOT forget to add the file to .gitignore!');
-        process.exit(1);
+export let ftpDeployYamlPath = "./ftp-deploy.yml";
+export async function parseGlobalConfig() {
+    for (let i = 0; i < process.argv.length; i++) {
+        if (process.argv[i].startsWith('--config')) {
+            ftpDeployYamlPath = process.argv[i].split('=')[1];
+            if (!fs.existsSync(ftpDeployYamlPath)) {
+                logError(`Config file "${ftpDeployYamlPath}" does not exist!`);
+                process.exit(1);
+            }
+            break;
+        }
     }
-    const configStr = fs.readFileSync('./ftp-deploy.yml', 'utf8')
+
+    await checkFtpDeployFile();
+    const ftp = getFtpInfoFromEnv();
+    const ssh = getSshInfoFromEnv(ftp);
+
+
+    const configStr = fs.readFileSync(ftpDeployYamlPath, 'utf8')
         .split('\n')
         .filter(t => t.trim().length > 0 && !t.trim().startsWith('#'))
-        .join('\n');
+        .join('\n')
+        .replace('$env.FTP_SERVER$', ftp.server)
+        .replace('$env.FTP_USERNAME$', ftp.username)
+        .replace('$env.FTP_PASSWORD$', ftp.password)
+        .replace('$env.SSH_USERNAME$', ssh?.username ?? '')
+        .replace('$env.SSH_PASSWORD$', ssh?.password ?? '');
+
     const config = YAML.parse(configStr) as DeployYaml;
-    config.steps.local ??= [];
-    config.steps.server ??= [];
+    
+    config.steps = validateSteps(config);
 
-    config.steps.local = validateSteps(config, 'local')
-    config.steps.server = validateSteps(config, 'server')
+    config.config.source_basepath ??= './';
+    config.config.ftp
+    config.config.ssh = ssh;
 
-    // console.log(config.steps.local);
+    let depBasePath = config.config.deployer_basepath ??= './deployer/';
+    if (depBasePath[depBasePath.length - 1] !== '/')
+        depBasePath += '/';
+    config.deployer = {
+        path_base: depBasePath,
+        path_data: depBasePath + 'data/',
+        path_manifest: depBasePath + 'manifest.json',
+    }
     return config;
 }
 
-function validateSteps(yaml: DeployYaml, key: 'local' | 'server') {
-    const steps = yaml.steps[key];
-    let invalidPredefined = (steps.filter(t => 'predefined' in t) as { predefined: string }[])
-        .find(t => !(predefinedMethods as any).includes(t.predefined));
+function validateSteps(yaml: DeployYaml) {
+    if(!yaml.steps){
+        return yaml.steps = [];
+    }
+
+    const validatePredefined = (t: PredefinedMethods) => {
+        let method: string;
+        if (typeof t === 'object') {
+            if (!('method' in t))
+                return false;
+            method = t.method;
+        } else
+            method = t;
+
+        return (predefinedMethods as any).includes(method);
+    }
+
+    let invalidPredefined = (yaml.steps.filter(t => 'predefined' in t) as { predefined: PredefinedMethods }[])
+        .find(t => !validatePredefined(t.predefined));
+
     if (invalidPredefined) {
-        logError(`"${invalidPredefined.predefined}" from "steps.${key}" is not a valid predefined function`);
+        logError(`"${invalidPredefined.predefined}" is not a valid predefined function`);
         process.exit(1);
     }
-    for (let i = 0; i < steps.length; i++) {
-        const sh = steps[i];
+    for (let i = 0; i < yaml.steps.length; i++) {
+        const sh = yaml.steps[i];
         const key2 = ['shell', 'ssh_shell'].find(t => t in sh);
-        if (key2){
-            steps[i][key2].command = formatCommand(yaml.config, sh[key2]);
-            if(steps[i][key2].message){
-                steps[i][key2].message = sh[key2].message.replace('$command', sh[key2].command);
+        if (key2) {
+            yaml.steps[i][key2].command = formatCommand(yaml.config, sh[key2]);
+            if (yaml.steps[i][key2].message) {
+                yaml.steps[i][key2].message = sh[key2].message.replace('$command', sh[key2].command);
             }
         }
     }
 
-    return steps;
+    return yaml.steps;
 }
 
+
+async function checkFtpDeployFile() {
+    if (fs.existsSync(ftpDeployYamlPath))
+        return;
+
+    const shouldCreateNew = (await prompts({
+        type: 'confirm',
+        name: 'value',
+        message: 'No config file for ftp-deploy found in the root directory. Do you want to create a default one? (default: Yes)',
+        initial: true,
+    })).value;
+
+
+    if (!shouldCreateNew)
+        process.exit(1);
+
+    const os = (await prompts({
+        type: 'select',
+        name: 'os',
+        message: 'What is the type of your project?',
+        choices: [
+            { title: 'IIS (Windows)', value: ProjectTypes.iis },
+            { title: 'Laravel (Linux)', value: ProjectTypes.laravel },
+        ]
+    })).os as ProjectType;
+
+    fs.writeFileSync(ftpDeployYamlPath, os === ProjectTypes.iis ? defaultConfigIIS : defaultConfigLaravel);
+    
+    const contentToAddToEnv = 'FTP_SERVER=\nFTP_USERNAME=\nFTP_PASSWORD=\nSSH_USERNAME=\nSSH_PASSWORD=\n';
+    if(!fs.existsSync('.env')){
+        fs.writeFileSync('.env', contentToAddToEnv);
+        logWarning('\n- Created default ".env" file in the root directory. Fill in all information.');
+    }else{
+        const content = fs.readFileSync('.env').toString();
+        if(!content.includes('FTP_') && !content.includes('SSH_')){
+            fs.appendFileSync('.env', contentToAddToEnv);
+            logWarning('\n- Added default "FTP_" and "SSH_" variables to the existing ".env" file. Fill in all information.');
+        }
+    }
+    logWarning('- Created default "ftp-deploy.yml" file in the root directory. Have a look, edit if necessary and start again!');
+    
+    if(fs.existsSync('.gitignore')){
+        const content = fs.readFileSync('.gitignore').toString();
+        if(!content.includes('.env') && (await prompts({
+            type: 'confirm',
+            name: 'value',
+            message: 'Your .gitignore does NOT contain ".env". Do you want to add it? (Highly recommended) (default: Yes)',
+            initial: true,
+        })).value){
+            fs.appendFileSync('.gitignore', '\n.env')
+            logWarning('- Added ".env" to .gitignore');
+        }
+    }else{
+        const shouldCreateNew = (await prompts({
+            type: 'confirm',
+            name: 'value',
+            message: 'No ".gitignore" file found in the root directory. Do you want to create a default one? (default: Yes)',
+            initial: true,
+        })).value;
+        if(shouldCreateNew){
+            fs.writeFileSync('.gitignore', '.env\nnode_modules\ndeployer');
+            logWarning('- Created default ".gitignore" file in the root directory. Added ".env" to it');
+        }
+    }
+
+    process.exit(1);
+}
 
 export function getFtpInfoFromEnv() {
     const ftp = parseEnv('FTP_', false, true);
@@ -153,7 +266,7 @@ export async function runShellSsh(ssh: NodeSSH, cmd: string, ignoreErrors = fals
             onStderr: c => {
                 if (ignoreErrors)
                     return null;
-                logError(c.toString());
+                logError(c.toString().trim() + ' (stderr)');
                 ssh.dispose();
                 process.exit(1);
             }
@@ -161,7 +274,7 @@ export async function runShellSsh(ssh: NodeSSH, cmd: string, ignoreErrors = fals
     } catch (error) {
         if (ignoreErrors)
             return;
-        logError(error.toString());
+        logError(error.toString().trim() + ' (catch)');
         ssh.dispose();
         process.exit(1);
     }
@@ -187,14 +300,13 @@ export function formatCommand(config: Config, shell: StepShell) {
     return stringFormat(shell.command, args);
 }
 
-
-export function findInDir(dir: string, onFound: (p:string, s:fs.Stats) => void, exclude?: (path:string, name:string, stat:fs.Stats) => boolean) {
+export function findInDir(dir: string, onFound: (p: string, s: fs.Stats) => void, exclude?: (path: string, name: string, stat: fs.Stats) => boolean) {
     dir = dir.replace(/\\/gi, "/");
     const files = fs.readdirSync(dir);
     for (const file of files) {
         let path = fsPath.join(dir, file).replace(/\\/gi, "/");
         const stat = fs.lstatSync(path);
-        if(exclude && exclude(path, file, stat)){
+        if (exclude && exclude(path, file, stat)) {
             continue;
         }
         if (stat.isDirectory()) {

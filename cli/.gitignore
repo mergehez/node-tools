@@ -1,3 +1,3 @@
-storage/
+deployer/
 .env
 ftp-deploy.yml
