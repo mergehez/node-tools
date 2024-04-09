@@ -5,41 +5,19 @@
 npm i --global @mergehez/cli
 
 # yarn 
-yarn add --global @mergehez/cli -D
+yarn global add @mergehez/cli
 
 # pnpm 
-pnpm add --global @mergehez/cli -D
+pnpm add -g @mergehez/cli
 ```
 
-## Usage
+## Command Docs
 
-### ftp-deploy
-1. Add following information to your .env file:
-
-```yaml
-...
-FTP_USERNAME=myusername
-FTP_PASSWORD=mypassword
-FTP_SERVER=127.0.0.1
-FTP_TARGET_BASEPATH=test/mysite
-...
-```
-
-2. Add this script to the `scripts` section of your `package.json`
-
-```json
-{
-    ...
-    "scripts" : {
-        "deploy" : "npm ftp-deploy"
-    }
-}
-```
-
-3. Run `npm run deploy`
-
-### git-switch
-1. Run `npx git-switch` and you get instructions!
+- [ftp-deploy](docs/ftp-deploy.md)
+- [git-switch](docs/git-switch.md)
+- [img-resize](docs/img-resize.md)
+- [rename](docs/rename.md)
+- [phpmin](docs/phpmin.md)
 
 ## License
 

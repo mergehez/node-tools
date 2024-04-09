@@ -2,13 +2,16 @@
 ##  Install
 
 ```bash
-npm i -D @mergehez/build @mergehez/cli @mergehez/build @mergehez/build
+npm i -D @mergehez/build
+npm i -g @mergehez/cli
 
 # yarn 
-yarn add -D @mergehez/build @mergehez/cli @mergehez/build @mergehez/build
+yarn add -D @mergehez/build
+yarn global add @mergehez/cli
 
 # pnpm 
-pnpm add -D @mergehez/build @mergehez/cli @mergehez/build @mergehez/build
+pnpm add -D @mergehez/build
+pnpm add -g @mergehez/cli
 ```
 
 ## Docs

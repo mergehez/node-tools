@@ -2,13 +2,13 @@
 ##  Install
 
 ```bash
-npm i @mergehez/build -D 
+npm i -D @mergehez/build
 
 # yarn 
-yarn add @mergehez/build -D
+yarn add -D @mergehez/build
 
 # pnpm 
-pnpm add @mergehez/build -D
+pnpm add -D @mergehez/build
 ```
 
 ## Usage
