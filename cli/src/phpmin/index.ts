@@ -1,13 +1,13 @@
-import { Engine } from 'php-parser';
+import {Engine} from 'php-parser';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { findInDir } from '../../../shared/src/helpers';
-import { DefaultMinifyOptions, MinifyOptions } from './utils';
+import {fileURLToPath} from 'url';
+import {findInDir} from '../../../shared/src/helpers';
+import {DefaultMinifyOptions, MinifyOptions} from './utils';
 
-const files:string[] = [];
-findInDir('storage/framework/views', (path, stat)=> {
-    if(path.endsWith('.php'))
+const files: string[] = [];
+findInDir('storage/framework/views', (path) => {
+    if (path.endsWith('.php'))
         files.push(path);
 });
 
@@ -23,23 +23,24 @@ new Promise(async function () {
     }
     console.log('');
     return true;
+}).then(() => {
 });
 
 function minifyPHP(file_value: string, user_options?: MinifyOptions) {
     user_options ??= DefaultMinifyOptions;
 
     const parser = new Engine({
-        parser: { extractDoc: true },
-        lexer: { all_tokens: true }
+        parser: {extractDoc: true},
+        lexer: {all_tokens: true}
     });
     // Options
-    var options_excludes:string[] = [];
+    let options_excludes: string[] = [];
 
     // var options_minify_replace_variables = true;
-    var options_minify_remove_whitespace = true;
-    var options_minify_remove_comments = true;
+    let options_minify_remove_whitespace = true;
+    let options_minify_remove_comments = true;
 
-    var options_output = "";
+    let options_output = "";
 
     if (user_options.excludes && "indexOf" in user_options.excludes) options_excludes = user_options.excludes;
     if (user_options.minify) {
@@ -49,14 +50,14 @@ function minifyPHP(file_value: string, user_options?: MinifyOptions) {
     }
     if (user_options.output) options_output = user_options.output;
 
-    function uniqid(prefix?:string, suffix?:string) {
+    function uniqid(prefix?: string, suffix?: string) {
         return (prefix ?? '') + Date.now().toString(36) + (suffix ?? '');
     }
 
     // Minify & Obsfuscate Function
     function parseData(source_code: string) {
-        let functions:string[] = [];
-        let variables:string[] = [];
+        let functions: string[] = [];
+        let variables: string[] = [];
         let new_source = '';
 
         // Return an array of tokens (same as php function token_get_all)
@@ -72,8 +73,8 @@ function minifyPHP(file_value: string, user_options?: MinifyOptions) {
                 if (!variables[token[1]]) variables[token[1]] = uniqid();
             }
 
-            if(token[0] === 'T_STRING' && typeof tokens[key - 2] !== 'undefined' && Array.isArray(tokens[key - 2])){
-                if(tokens[key - 2][1] === "$this" && !variables["$" + token[1]])
+            if (token[0] === 'T_STRING' && typeof tokens[key - 2] !== 'undefined' && Array.isArray(tokens[key - 2])) {
+                if (tokens[key - 2][1] === "$this" && !variables["$" + token[1]])
                     variables["$" + token[1]] = uniqid();
                 else if (tokens[key - 2][1] === "function" && !functions[token[1]])
                     functions[token[1]] = token[1];
@@ -101,20 +102,15 @@ function minifyPHP(file_value: string, user_options?: MinifyOptions) {
                     ) {
                         new_source += " ";
                     }
-                }
-                else if (token[0] === 'T_CASE') {
+                } else if (token[0] === 'T_CASE') {
                     new_source += token[1] + " ";
-                }
-                else if (token[0] === 'T_OPEN_TAG') {
+                } else if (token[0] === 'T_OPEN_TAG') {
                     new_source += "<?php ";
-                }
-                else if (token[0] === 'T_CLOSE_TAG') {
+                } else if (token[0] === 'T_CLOSE_TAG') {
                     new_source += " ?>";
-                }
-                else if (token[0] === 'T_INLINE_HTML') {
+                } else if (token[0] === 'T_INLINE_HTML') {
                     new_source += token[1].replace(/[\n\r]+/g, '').replace(/\s{2,10}/g, ' ');
-                }
-                else {
+                } else {
                     new_source += token[1];
                 }
             } else {
@@ -137,8 +133,8 @@ function minifyPHP(file_value: string, user_options?: MinifyOptions) {
         });
     }
 
-    function isFileSync(aPath) {
-        var max_path_length = 4096;
+    function isFileSync(aPath: string) {
+        let max_path_length = 4096;
         try {
             if (aPath.length > max_path_length || aPath.indexOf("<?php") !== -1) {
                 return false;

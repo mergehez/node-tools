@@ -1,3 +1,5 @@
-deployer/
 .env
-ftp-deploy.yml
+*.jpg
+*.php
+*.zip
+*.yml

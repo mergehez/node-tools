@@ -1,5 +1,5 @@
 import { createCommonJS } from 'mlly'
-import { logError} from '../../../shared/src/helpers';
+import { logError } from '../../../shared/src/helpers';
 const { require } = createCommonJS(import.meta.url)
 
 const sharp = require('sharp')
@@ -37,7 +37,7 @@ export function getSize(imageSize: Size, { width, height, maxWidth, maxHeight, s
 
     const ratio = imageSize.width / imageSize.height;
 
-    if(scale){
+    if (scale) {
         width = Math.round(imageSize.width * scale);
         height = Math.round(imageSize.height * scale);
         return { width, height };
@@ -102,7 +102,7 @@ export async function resizeImage(fileOrUrl: Buffer | string, options: ResizeIma
 }
 
 const maxTryCount = 200;
-export async function resizeUntilMaxSize(src: string, options: ResizeImageOptions, maxSize: number, tryCount = 0){
+export async function resizeUntilMaxSize(src: string, options: ResizeImageOptions, maxSize: number, tryCount = 0) {
     try {
         const res = await resizeImage(src, {
             width: options["width"],
@@ -114,22 +114,22 @@ export async function resizeUntilMaxSize(src: string, options: ResizeImageOption
             scale: options["scale"],
             type: src.endsWith('png') ? 'png' : 'jpeg'
         });
-        if(res.buffer.length > maxSize){
-            if(tryCount > maxTryCount){
+        if (res.buffer.length > maxSize) {
+            if (tryCount > maxTryCount) {
                 logError(`  Couldn't achieve max size of ${maxSize} bytes after ${maxTryCount} tries! (quality: ${options.quality}, scale: ${options.scale}, size: ${res.buffer.length} bytes)`);
                 process.exit(1);
             }
             const newQuality = Math.round(options.quality * 0.9);
-            if(newQuality < 10 || newQuality === options.quality){
+            if (newQuality < 10 || newQuality === options.quality) {
                 options.scale = (options.scale ?? 1) * 0.9;
-                if(options.scale < 0.1){
+                if (options.scale < 0.1) {
                     logError(`  Couldn't achieve max size of ${maxSize} bytes after ${maxTryCount} tries! (quality: ${options.quality}, scale: ${options.scale}, size: ${res.buffer.length} bytes)`);
                     process.exit(1);
                 }
-            }else{
+            } else {
                 options.quality = Math.round(options.quality * 0.9);
             }
-            return await resizeUntilMaxSize(src, options, maxSize, tryCount+1);
+            return await resizeUntilMaxSize(src, options, maxSize, tryCount + 1);
         }
         return {
             ...res,

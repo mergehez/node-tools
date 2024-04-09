@@ -1,21 +1,17 @@
 config:
-  project_id: my_project_123        # required, unique id for the project
-  project_type: iis                 # don't edit this
-  deployer_basepath: ./deployer     # add this path to .gitignore
-  source_basepath: ./bin/publish    # base path for the files to upload 
-  target_basepath: mysite           # required, path after ftp root
-  iis_pool: testo                   # required, iis pool name
-  iis_site: testo                   # required, iis site name
-  host: $env.FTP_SERVER$            # you can use $env.*$ or the plain value directly here
+  project_type: iis                           # don't edit this
+  source_basepath: ./bin/publish              # base path for the files to upload 
+  target_basepath: C:/inetpub/wwwroot/mysite  # required, (full) absolute path!
+  iis_pool: testo                             # required, iis pool name
+  iis_site: testo                             # required, iis site name
+  host: ${env.FTP_SERVER}                     # you can use ${env.*} or the plain value directly here
   ftp:
-    username: $env.FTP_USERNAME$
-    password: $env.FTP_PASSWORD$
+    username: ${env.FTP_USERNAME}
+    password: ${env.FTP_PASSWORD}
+    base_path: C:/inetpub/wwwroot
   ssh:
-    username: $env.SSH_USERNAME$
-    password: $env.SSH_PASSWORD$
-
-  # possible values: always, if_ssh
-  zip: if_ssh
+    username: ${env.SSH_USERNAME}
+    password: ${env.SSH_PASSWORD}
 
   # for printing "files to upload". files inside these dirs, won't be printed, instead "dir/*"
   dist_dirs:
@@ -26,8 +22,8 @@ config:
 steps:
   - predefined:
       method: server:restart_iis_site
-      pool: $config.iis_pool
-  - predefined:                     # sleep for 2 seconds to let the site restart
+      pool: ${config.iis_pool}
+  - predefined: # sleep for 2 seconds to let the site restart
       method: local:sleep
       ms: 2000
   - shell:
@@ -35,18 +31,16 @@ steps:
       message: blue|\n-> Deleting "bin" on local machine
       ignore_stdout: true
   - shell:
-      command: dotnet publish -c Release -r win-x86 -f net8.0 -o "{0}"
-      args: [$config.source_basepath]
+      command: dotnet publish -c Release -r win-x86 -f net8.0 -o "{{0}}"
+      args:
+        - ${config.source_basepath}
       message: blue|\n-> building project
       ignore_stdout: true
 
-  - predefined: local:prepare_deployer
-  - predefined: local:find_new_files
-  - predefined: local:copy_files_to_deployer
-  - predefined: local:check_dry_run
-  - predefined: local:save_deployer_status_tmp
-      
-  - predefined: local:upload_files
+  - predefined: server:find_new_files
+  - predefined: local:exit_if_dry_run
+
+  - predefined: server:upload_files
   - predefined: server:unzip
   - predefined: server:delete_zip
   - predefined: local:dispose_ssh
