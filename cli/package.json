@@ -23,12 +23,15 @@
         "ftp-deploy": "dist/ftp-deploy.mjs",
         "git-switch": "dist/git-switch.mjs",
         "img-resize": "dist/img-resize.mjs"
+        "rename": "dist/rename.mjs"
     },
     "scripts": {
         "build": "rm -rf dist && node build.mjs",
         "publish": "npm run build && npm publish && npm update --global @mergehez/cli && npm view @mergehez/cli version",
         "test-ftp-deploy": "npm run build && node dist/ftp-deploy.mjs --fresh --config='./ftp-deploy.yml'",
         "test-img-resize": "npm run build && node dist/img-resize.mjs -i='[0-9]+.jpg' -o='[name]-thumbnail.jpg' -s=0.9 --max-size=1024/2"
+        "test-rename": "npm run build && node dist/rename.mjs -i='([A-9_ ]+)-([0-9]+).jpg' -o='img-$2.jpg' --dry",
+        "test-rename2": "npm run build && node dist/rename.mjs -i='([A-9_ ]+)-([0-9]+).jpg' -o='img-$trimr(2, 0).jpg' --dry"
     },
     "devDependencies": {
         "@hyrious/esbuild-plugin-commonjs": "^0.2.4",

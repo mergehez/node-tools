@@ -32,6 +32,11 @@ await build({
     outfile: "dist/img-resize.mjs",
     entryPoints: ["src/img-resize/index.ts"],
 });
+await build({
+    ...sharedConfig,
+    outfile: "dist/rename.mjs",
+    entryPoints: ["src/rename/index.ts"],
+});
 
 await build({
     ...sharedConfig,
@@ -46,6 +51,5 @@ await build({
                 })
             }
         },
-    ],
-    external: ["node-ssh"]
+    ]
 });
