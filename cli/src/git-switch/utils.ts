@@ -1,6 +1,7 @@
 import {parseYaml, runShell} from "../cli_utils";
 import {createInterface} from 'node:readline/promises';
 import {logError} from "../../../shared/src/helpers";
+import {EOL} from "node:os";
 
 const rl = createInterface({
     input: process.stdin,
@@ -53,7 +54,7 @@ export async function gitConfigToGitInfo() {
 export async function askAndSetConfig(text: string, key: string) {
     let res = '';
     while (!res.trim())
-        res = await rl.question(text + "\n> ");
+        res = await rl.question(text + EOL+"> ");
     if (res == 'q')
         process.exit();
     await updateGlobalGitConfig(key, res);

@@ -36,7 +36,8 @@ export function log(message: string, color?: LogColor) {
 
     }
     message ??= '';
-    message = message.replace('\\n', '\n');
+    message = message.replace('\\r\\n', '\r\n')
+                    .replace('\\n', '\n');
     if (color)
         return console.log(chalk[color](message));
 

@@ -5,6 +5,7 @@ import YAML from 'yaml'
 import {parseEnv, promptConfirm, promptChoice, ShellProps} from '../cli_utils';
 import {logError, logWarning, stringFormat} from '../../../shared/src/helpers';
 import {DeployYaml, PredefinedMethods, ProjectTypes, ProjectType, EnvCredentials, Credentials, obsoleteMethods, predefinedMethods, _toString_Help} from './types';
+import {EOL} from "node:os";
 
 export let ftpDeployYamlPath = "./ftp-deploy.yml";
 
@@ -31,10 +32,9 @@ export async function parseGlobalConfig(): Promise<DeployYaml> {
 
     // const str = fs.readFileSync(ftpDeployYamlPath, 'utf8');
     const configStr = fs.readFileSync(ftpDeployYamlPath, 'utf8')
-        .split('\n')
-        .map(t => t.endsWith('\r') ? t.substring(0, t.length - 1) : t)
+        .split(EOL)
         .filter(t => t.trim().length > 0 && !t.trim().startsWith('#'))
-        .join('\n')
+        .join(EOL)
         .replace('${env.FTP_SERVER}', ftpEnv.server)
         .replace('${env.FTP_USERNAME}', ftpEnv.username)
         .replace('${env.FTP_PASSWORD}', ftpEnv.password)

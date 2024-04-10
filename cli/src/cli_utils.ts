@@ -4,6 +4,7 @@ import {execSync} from "child_process";
 import {log, logError, logInfo, logWarning} from "../../shared/src/helpers";
 import prompts from "prompts";
 import {NodeSSH} from "node-ssh";
+import {EOL} from "node:os";
 
 export type ShellProps = {
     ssh?: boolean,
@@ -88,8 +89,7 @@ export function parseEnv(prefix: string, exitIfNoEnv = true, removePrefix = fals
 }
 
 export function parseYaml(content: string, prefix: string, removePrefix = false): Record<Lowercase<string>, string> {
-    let lines = content.split('\n')
-        .map(t => t.endsWith('\r') ? t.substring(0, t.length - 1) : t)
+    let lines = content.split(EOL)
         .filter(t => t.startsWith(prefix));
 
     if (removePrefix)

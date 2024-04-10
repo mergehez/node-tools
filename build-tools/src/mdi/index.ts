@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { HmrContext } from 'vite';
 import { _InternalMdiIcon } from './mdi-icons';
+import {EOL} from "node:os";
 
 export type MdiIcon = _InternalMdiIcon | `${_InternalMdiIcon}:${'outlined' | 'sharp' | 'two-tone'}`;
 

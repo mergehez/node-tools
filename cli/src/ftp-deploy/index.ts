@@ -10,6 +10,7 @@ import path from "node:path";
 import {NodeSSH} from "node-ssh";
 import {ShellProps, runShell} from "../cli_utils";
 import {findInDir, log, logError, logInfo, logSuccess, logWarning, sleep} from "../../../shared/src/helpers";
+import {EOL} from "node:os";
 
 const zipFileName = 'ftpdeploy_archive.zip';
 const yamlConfig = await parseGlobalConfig();
@@ -19,6 +20,9 @@ const ig = ignore().add(config.ignores);
 const sshInfo = config.ssh && config.ssh.username && config.ssh.password ? config.ssh : null;
 const isIIS = config.project_type === ProjectTypes.iis;
 const isFresh = process.argv.includes('--fresh');
+
+// console.log(ig);
+// process.exit(1);
 
 const startTime = performance.now();
 let lastFiles: Manifest | undefined;
@@ -236,7 +240,7 @@ async function uploadFilesViaFtp() {
                     logError(err);
                     process.exit(1);
                 }
-                const firstLine = err.split('\n')[0];
+                const firstLine = err.split(EOL)[0];
                 const possibleErrorMessages = [
                     'command not found',
                     'not recognized as an internal or external command',
