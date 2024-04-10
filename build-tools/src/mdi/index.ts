@@ -58,7 +58,7 @@ class _ConfigHelper {
             this.writeToFile();
     }
     writeToFile() {
-        fs.writeFileSync(this.target, this.content.split("}.ic.").join("}\n.ic.").trim());
+        fs.writeFileSync(this.target, this.content.split("}.ic.").join("}"+EOL+".ic.").trim());
     }
     icExists(name: string) {
         return this.icsAlreadyAdded.some((t) => t.name === name);
