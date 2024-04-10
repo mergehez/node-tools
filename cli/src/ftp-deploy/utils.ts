@@ -185,12 +185,10 @@ export function getSshInfoFromEnv(ftpInfo: EnvCredentials): Credentials | null {
     return ssh as EnvCredentials;
 }
 
-export function getValueOfStringArgFromYaml(config: DeployYaml, strKey: string) {
+export function getValueOfStringArgFromYaml(config: DeployYaml, strKey: string, defVal: any) {
     strKey = strKey.trim();
-    console.log('-' + strKey + '-', typeof strKey);
     if (typeof strKey !== 'string' || !strKey.startsWith('${') || !strKey.endsWith('}')) {
-        console.log("if (typeof a !== 'string' || !a.startsWith(`\${`) || !a.endsWith(`}`)){")
-        return strKey.toString();
+        return defVal;
     } else {
         let dottedKey = strKey.substring(2, strKey.length - 1);
         const [k, ...keys] = dottedKey.split('.');
@@ -213,7 +211,7 @@ export function formatCommand(config: DeployYaml, shell: ShellProps) {
         return shell.command;
     const args: string[] = [];
     for (let a of shell.args) {
-        const res = getValueOfStringArgFromYaml(config, a);
+        const res = getValueOfStringArgFromYaml(config, a, shell.args[a]);
         if (res === undefined) {
             logError(`"${shell.command}" has "${a}" as argument but it doesn't exist in config!`);
             process.exit(1);

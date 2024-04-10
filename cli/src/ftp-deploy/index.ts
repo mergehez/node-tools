@@ -331,7 +331,7 @@ async function startAll() {
                 for (const k in method) {
                     if (k === 'method')
                         continue;
-                    method[k] = getValueOfStringArgFromYaml(yamlConfig, k);
+                    method[k] = getValueOfStringArgFromYaml(yamlConfig, k, method[k]);
                     if (method[k] === undefined) {
                         logError(`"${name}.${k}" has "method[k]" as argument but it doesn't exist in yaml!`);
                         process.exit(1);
