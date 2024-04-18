@@ -19,7 +19,7 @@ const lastUserName = config.user.name;
 config.user = accounts[nextAccountKey];
 await runShell({
     command: 'gh auth logout --hostname github.com',
-    ignore_error: true,
+    on_error: 'ignore',
     ignore_stdout: true,
 })
 
@@ -30,7 +30,7 @@ async function tryLogin(retryCount = 3) {
         writeFileSync(tempFileName, config.user.token);
         await runShell({
             command: `gh auth login --hostname github.com --with-token < ${tempFileName}`,
-            ignore_error: false,
+            on_error: "throw",
             ignore_stdout: true,
         })
 

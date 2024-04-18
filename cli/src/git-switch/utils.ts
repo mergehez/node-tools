@@ -13,7 +13,7 @@ export type Account = { name: string, email: string, token: string };
 export async function updateGlobalGitConfig(key: string, value: string) {
     await runShell({
         command: `git config --global --unset ${key}`,
-        ignore_error: true,
+        on_error: 'ignore',
     });
     await runShell({
         command: `git config --global --add ${key} ${value}`,

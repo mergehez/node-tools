@@ -23,20 +23,24 @@ let input = options.input.replaceAll('[A-9', '[A-z0-9');
 let output = options.output;
 
 const files: string[] = [];
-findInDir('./', (p, s) => {
-    const m = new RegExp(input).exec(p);
-    files.push(p);
-}, (p: string, n: string, s: fs.Stats) => {
-    if (s.isDirectory())
-        return true;
-    return !(new RegExp(input).test(n));
-});
+findInDir({
+    baseDir: './',
+    onFound: (data) => {
+        // const m = new RegExp(input).exec(data.path);
+        files.push(data.path);
+    },
+    objectCreator: (data) => {
+        if (data.stat.isDirectory() || !new RegExp(input).test(data.name))
+            return null;
+        return data;
+    }
+})
 
-for (var i = 0; i < files.length; i++) {
+for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const m = new RegExp(input).exec(file);
     let newName = output.replace('[i]', i.toString()).replace('[pos]', (i + 1).toString());
-    for (var j = 1; j < m.length; j++) {
+    for (let j = 1; j < m.length; j++) {
         if (newName.includes(`$trim(${j})`)) {
             m[j] = m[j].trim();
             newName = newName.replace(`$trim(${j})`, m[j]);
@@ -91,9 +95,4 @@ for (var i = 0; i < files.length; i++) {
         fs.renameSync(file, newName);
         logSuccess(`Renamed ${file} to ${newName}`);
     }
-}
-
-
-function trim(exp: string, replace: string) {
-
 }

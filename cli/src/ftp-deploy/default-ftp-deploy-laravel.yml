@@ -49,29 +49,29 @@ config:
 steps:
   - shell:
       command: php artisan route:cache;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
   - shell:
       command: php artisan cache:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
   - shell:
       command: php artisan config:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
   - shell:
       command: php artisan view:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
   - shell:
       command: php artisan optimize:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
   - shell:
       command: php artisan debugbar:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
-      ignore_error: true
+      on_error: 'ignore'
   - shell:
       command: rm -r public/build;
       message: blue|\n-> Deleting dist on local machine
@@ -79,7 +79,7 @@ steps:
   - shell:
       command: npm run build || exit 2;
       message: blue|\n-> npm run build
-      ignore_error: true
+      on_error: 'ignore'
       ignore_stdout: true
   # - log: I am a log
   # - log: 
@@ -89,13 +89,16 @@ steps:
   - predefined: local:exit_if_dry_run
   - shell:
       ssh: true
-      command: rm public/hot;
+      command:
+        windows: del public/hot;
+        other: rm public/hot;
       message: blue|\n-> Deleting "public/hot" file on server
-      ignore_error: true
+      on_error: 'ignore'
   - shell:
       ssh: true
       command: rm -r public/build/assets/*;
       message: blue|\n-> Deleting old auto-generated vue&js files on server
+      on_error: 'ignore'
   - predefined: server:upload_files
   - predefined: server:unzip
   - predefined: server:delete_zip
@@ -104,14 +107,16 @@ steps:
       command: export COMPOSER_ALLOW_SUPERUSER=1 && composer install --optimize-autoloader --no-interaction --no-dev --prefer-dist
       message: blue|\n-> composer install non-dev dependecies
       ignore_stdout: true
-      ignore_error: true
+      on_error: 'print'
   - shell:
       ssh: true
-      command: php artisan optimize:clear && php artisan view:cache;
-      message: blue|\n-> $command on server
+      command: install -d -m 0755 -o www -g www storage/framework/views; # these are automatically created: "storage/framework/cache" "storage/logs"
+      message: blue|\n-> making sure "storage/views" folder exists on server
+      on_error: 'print'
   - shell:
       command: php artisan optimize:clear;
-      message: blue|\n-> $command
+      message: blue|\n-> ${command}
       ignore_stdout: true
+      on_error: 'print'
   - predefined: local:dispose_ssh
   - predefined: local:finish

@@ -84,22 +84,28 @@ const files: {
     dest: string,
 }[] = [];
 
-findInDir('./', (path) => {
-    let ext = extname(path);
-    const name = path.replace(ext, '');
-    ext = ext.startsWith('.') ? ext.substring(1) : ext;
+findInDir({
+    baseDir: './',
+    onFound: (data) => {
+        let ext = extname(data.path);
+        const name = data.path.replace(ext, '');
+        ext = ext.startsWith('.') ? ext.substring(1) : ext;
 
-    files.push({
-        src: path,
-        dest: output.replace('[name]', name).replace('[ext]', ext)
-    });
-}, (_, n: string, s: fs.Stats) => {
-    if (s.isDirectory())
-        return true;
-    if (!['.png', '.jpg', '.jpeg'].includes(extname(n)))
-        return true;
-    return !(new RegExp(input).test(n));
-});
+        files.push({
+            src: data.path,
+            dest: output.replace('[name]', name).replace('[ext]', ext)
+        });
+    },
+    objectCreator: (data) => {
+        if (data.stat.isDirectory())
+            return null;
+        if (!['.png', '.jpg', '.jpeg'].includes(extname(data.name)))
+            return null;
+        if(!(new RegExp(input).test(data.name)))
+            return null;
+        return data;
+    }
+})
 
 for (const file of files) {
     logInfo(`\n- Resizing: ${file.src}`);

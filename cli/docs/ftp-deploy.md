@@ -77,12 +77,12 @@ npx ftp-deploy --config=path-to-my-yaml-file.yml
         command: npm run build || exit 2;
         message: blue|\n-> npm run build
         ignore_stdout: true                           # if true, no output to console. default is false (only for non-ssh)
-        ignore_error: false                           # if false, stops the program here. default is false
+        on_error: 'throw'                           # if 'throw', stops the program here. default is 'throw'. other options: 'print'(don't throw), 'ignore' (ignore totally)
     - shell:
         ssh: true
         command: composer install --optimize-autoloader --no-interaction --no-dev --prefer-dist
         message: blue|\n-> composer install non-dev dependencies
-        ignore_error: true
+        on_error: 'ignore'
 ```
 
 ### Predefined method names: 
@@ -100,11 +100,11 @@ npx ftp-deploy --config=path-to-my-yaml-file.yml
 ### Notes
   1. ssh shell commands are executed in the `target_basepath` directory. Of course, you can change the directory in your command using `cd` command
   2. `shell.message` is optional. if not defined, nothing gets printed!
-  3. you can use `$command` for shell message. this prints the executed command
+  3. you can use `${command}` for shell message. this prints the executed command
 ```yaml
   - shell:
       command: rm -r "./bin";
-      message: $command             # console output will be: rm -r "./bin";
+      message: ${command}             # console output will be: rm -r "./bin";
 ```
   1. shell messages can be printed colored.
 ```yaml

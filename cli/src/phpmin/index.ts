@@ -6,10 +6,13 @@ import {findInDir} from '../../../shared/src/helpers';
 import {DefaultMinifyOptions, MinifyOptions} from './utils';
 
 const files: string[] = [];
-findInDir('storage/framework/views', (path) => {
-    if (path.endsWith('.php'))
-        files.push(path);
-});
+findInDir({
+    baseDir: 'storage/framework/views',
+    onFound: (data) => {
+        if (data.path.endsWith('.php'))
+            files.push(data.path);
+    }
+})
 
 let options = DefaultMinifyOptions;
 const current_dir = path.dirname(fileURLToPath(import.meta.url));

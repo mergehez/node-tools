@@ -9,9 +9,8 @@ import {EOL} from "node:os";
 export type ShellProps = {
     ssh?: boolean,
     command: string,
-    args?: any[],
     message?: string,
-    ignore_error?: boolean, // if true, it will not throw an error if the command fails.
+    on_error?: 'throw' | 'print' | 'ignore', // print: print but don't throw. (default: throw)
     ignore_stdout?: boolean,
     return_error?: boolean,
     onError?: (err: any) => void,
@@ -20,7 +19,7 @@ export type ShellProps = {
 
 // if ignore_stdout is false, it will return the output of the command. (only for local shell)
 export async function runShell(props: ShellProps, ssh?: NodeSSH): Promise<string> {
-    const {command: cmd, message, ignore_error, ignore_stdout} = props;
+    const {command: cmd, message, on_error, ignore_stdout} = props;
     if (message)
         log(message);
 
@@ -30,13 +29,17 @@ export async function runShell(props: ShellProps, ssh?: NodeSSH): Promise<string
     }
 
     const onCatch = (err: any) => {
+        // logError(err.toString());
         const errStr = err?.stderr?.toString().replace('bash: line 0: ', '').trim();
+
         if (props.onError)
             props.onError(errStr ?? err);
 
-        if (ignore_error)
+        if (on_error === 'ignore' || on_error === 'print'){
+            if(on_error === 'print')
+                logWarning(errStr ?? err);
             return null;
-
+        }
 
         if (err.status && !ignore_stdout) {
             logError("runShell failed with status " + err.status)
@@ -80,7 +83,7 @@ export async function runShell(props: ShellProps, ssh?: NodeSSH): Promise<string
     }
 }
 
-export function parseEnv(prefix: string, exitIfNoEnv = true, removePrefix = false) {
+export function parseEnv(prefix: string = '', exitIfNoEnv = true, removePrefix = false) {
     if (!fs.existsSync('./.env')) {
         console.log(chalk.red('No .env file found!'));
         return exitIfNoEnv ? process.exit(1) : null;
@@ -88,15 +91,21 @@ export function parseEnv(prefix: string, exitIfNoEnv = true, removePrefix = fals
     return parseYaml(fs.readFileSync('./.env').toString(), prefix, removePrefix);
 }
 
-export function parseYaml(content: string, prefix: string, removePrefix = false): Record<Lowercase<string>, string> {
+export function parseYaml(content: string, prefix: string = '', removePrefix = false): Record<Lowercase<string>, string> {
     let lines = content.split(EOL)
-        .filter(t => t.startsWith(prefix));
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+        .filter(t => !t.startsWith('#'))
+        .filter(t => t.includes('='));
 
-    if (removePrefix)
+    if (prefix)
+        lines = lines.filter(t => t.startsWith(prefix));
+
+    if (prefix && removePrefix)
         lines = lines.map(t => t.substring(prefix.length))
 
     return lines.reduce((obj: any, t) => {
-        obj[t.split('=')[0].toLocaleLowerCase()] = t.substring(t.indexOf('=') + 1)
+        obj[t.split('=')[0]] = t.substring(t.indexOf('=') + 1)
         return obj;
     }, {});
 }

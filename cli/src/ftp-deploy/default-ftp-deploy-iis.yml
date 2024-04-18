@@ -15,21 +15,30 @@ config:
 
   # for printing "files to upload". files inside these dirs, won't be printed, instead "dir/*"
   dist_dirs:
+    - folder_with_lots_of_files
 
   ignores:
     - .DS_Store
+    - \*.zip
+    - \*.sqlite
+    - \*.mdb
+    - \*.accdb
 
 steps:
   - predefined:
       method: server:restart_iis_site
       pool: ${config.iis_pool}
+      site: ${config.iis_site}
   - predefined: # sleep for 2 seconds to let the site restart
       method: local:sleep
       ms: 2000
   - shell:
-      command: rm -r "./bin";
+      command:
+        windows: del -r "./bin";
+        other: rm -r "./bin";
       message: blue|\n-> Deleting "bin" on local machine
       ignore_stdout: true
+      on_error: ignore
   - shell:
       command: dotnet publish -c Release -r win-x86 -f net8.0 -o "{{0}}"
       args:

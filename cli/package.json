@@ -1,6 +1,6 @@
 {
     "name": "@mergehez/cli",
-    "version": "0.0.46",
+    "version": "0.0.61",
     "description": "personal productivity tools for laravel/vue/.net development!",
     "author": "mergehez <argesozdogan@gmail.com>",
     "license": "MIT",
@@ -28,8 +28,9 @@
     },
     "scripts": {
         "build": "rm -rf dist && node build.mjs",
-        "publishx": "npm run build && npm publish && npm update --global @mergehez/cli && npm view @mergehez/cli version",
-        "test-ftp-deploy": "npm run build && node dist/ftp-deploy.mjs --fresh --config='./ftp-deploy-laravel.yml'",
+        "publishx": "npm run build && npm version patch && npm publish && npm cache clean --force && npm i -g @mergehez/cli && npm list -g",
+        "test-ftp-deploy": "npm run build && node dist/ftp-deploy.mjs --config='./ftp-deploy-laravel.yml' --dry-run",
+        "test-ftp-deploy2": "node dist/ftp-deploy.mjs --config='./ftp-deploy-laravel.yml' --dry-run",
         "test-img-resize": "npm run build && node dist/img-resize.mjs -i='[0-9]+.jpg' -o='[name]-thumbnail.jpg' -s=0.9 --max-size=1024/2",
         "test-rename": "npm run build && node dist/rename.mjs -i='([A-9_ ]+)-([0-9]+).jpg' -o='img-$2.jpg' --dry",
         "test-rename2": "npm run build && node dist/rename.mjs -i='([A-9_ ]+)-([0-9]+).jpg' -o='img-$trimr(2, 0).jpg' --dry"
