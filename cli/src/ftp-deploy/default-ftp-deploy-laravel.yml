@@ -1,7 +1,7 @@
 config:
   project_type: laravel                   # don't edit this
   source_basepath: ./                     # base path for the files to upload 
-  target_basepath: /www/wwwroot/mysite    # required, (full) absolute path!
+  target_basepath: /www/wwwroot/mysite    # required, path after ftp root
   host: ${env.FTP_SERVER}                 # you can use ${env.*} or the plain value directly here
   ftp:
     username: ${env.FTP_USERNAME}
@@ -29,68 +29,53 @@ config:
     - node_modules
     - /database
     - /tests
-    - /example
     - /resources/js
     - /resources/css
     - /resources/sass
     - /resources/sass
     - /resources/svg
     - /resources/markdown
-    - /lang
     - /storage/debugbar
 
     #files
     - /.*
     - /*.*
+    - \*.zip
     - public/hot
     - .DS_Store
     - laravel.log
+    - \!composer.json
 
 steps:
   - shell:
-      command: php artisan route:cache;
-      message: blue|\n-> ${command}
+      command: php artisan optimize:clear; # clear cache, config, routes, views, events and compiled
+      message: blue|\n-> clear cache, config, routes, views, events and compiled
       ignore_stdout: true
   - shell:
-      command: php artisan cache:clear;
-      message: blue|\n-> ${command}
-      ignore_stdout: true
+     command: php artisan debugbar:clear;
+     message: blue|\n-> ${command}
+     ignore_stdout: true
+     on_error: 'ignore'
   - shell:
-      command: php artisan config:clear;
-      message: blue|\n-> ${command}
-      ignore_stdout: true
+     command: rm -r public/build;
+     message: blue|\n-> Deleting dist on local machine
+     ignore_stdout: true
   - shell:
-      command: php artisan view:clear;
-      message: blue|\n-> ${command}
-      ignore_stdout: true
-  - shell:
-      command: php artisan optimize:clear;
-      message: blue|\n-> ${command}
-      ignore_stdout: true
-  - shell:
-      command: php artisan debugbar:clear;
-      message: blue|\n-> ${command}
-      ignore_stdout: true
-      on_error: 'ignore'
-  - shell:
-      command: rm -r public/build;
-      message: blue|\n-> Deleting dist on local machine
-      ignore_stdout: true
-  - shell:
-      command: npm run build || exit 2;
-      message: blue|\n-> npm run build
-      on_error: 'ignore'
-      ignore_stdout: true
-  # - log: I am a log
-  # - log: 
-  #     message: I am an object log
+     command: npm run build || exit 2;
+     message: blue|\n-> npm run build
+     on_error: 'ignore'
+     ignore_stdout: true
+  #  - log: I am a log
+  #  - log:
+  #      message: I am an object log
 
   - predefined: server:find_new_files
   - predefined: local:exit_if_dry_run
+  - predefined: server:upload_files
   - shell:
       ssh: true
       command:
-        windows: del public/hot;
+        windows: del /s /q "./public/hot";
         other: rm public/hot;
       message: blue|\n-> Deleting "public/hot" file on server
       on_error: 'ignore'
@@ -99,19 +84,23 @@ steps:
       command: rm -r public/build/assets/*;
       message: blue|\n-> Deleting old auto-generated vue&js files on server
       on_error: 'ignore'
-  - predefined: server:upload_files
   - predefined: server:unzip
   - predefined: server:delete_zip
   - shell:
       ssh: true
-      command: export COMPOSER_ALLOW_SUPERUSER=1 && composer install --optimize-autoloader --no-interaction --no-dev --prefer-dist
-      message: blue|\n-> composer install non-dev dependecies
+      command: export COMPOSER_ALLOW_SUPERUSER=1 && composer update --optimize-autoloader --no-interaction --no-dev --prefer-dist
+      message: blue|\n-> composer update non-dev dependecies
       ignore_stdout: true
       on_error: 'print'
   - shell:
       ssh: true
       command: install -d -m 0755 -o www -g www storage/framework/views; # these are automatically created: "storage/framework/cache" "storage/logs"
       message: blue|\n-> making sure "storage/views" folder exists on server
+      on_error: 'print'
+  - shell:
+      ssh: true
+      command: php artisan optimize && sudo chown -R www:www storage;
+      message: blue|\n-> ${command}
       on_error: 'print'
   - shell:
       command: php artisan optimize:clear;
