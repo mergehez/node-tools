@@ -1,13 +1,13 @@
-import {findInDir, log, logError, logInfo, logSuccess, sleep, trimPath, unixTsToDate} from "../../../../shared/src/helpers";
-import ignore, {Ignore} from "../ignore";
-import {NodeSSH} from "node-ssh";
-import {runShell, ShellProps} from "../../cli_utils";
-import {TFileToUpload, TFileFromServer} from "../types";
-import {createIISExecuter, windows_consts} from "./iis_config";
-import {TFtpInfo, TPredefined, TPredefinedImplementations, TPredefinedX, TSshInfo, TYamlConfig} from "../yaml_types";
-import {createLaravelExecuter, unix_consts} from "./laravel_config";
-import {parseFtpDeployYaml} from "../yaml";
-import {createExecuterUtils} from "../utils";
+import { findInDir, log, logError, logInfo, logSuccess, sleep, trimPath, unixTsToDate } from "../../../../shared/src/helpers";
+import ignore, { Ignore } from "../ignore";
+import { NodeSSH } from "node-ssh";
+import { runShell, ShellProps } from "../../cli_utils";
+import { TFileToUpload, TFileFromServer } from "../types";
+import { createIISExecuter, windows_consts } from "./iis_config";
+import { TFtpInfo, TPredefined, TPredefinedImplementations, TPredefinedX, TSshInfo, TYamlConfig } from "../yaml_types";
+import { createLaravelExecuter, unix_consts } from "./laravel_config";
+import { parseFtpDeployYaml } from "../yaml";
+import { createExecuterUtils } from "../utils";
 
 export const consts = {
     zipFileName: 'ftpdeploy_archive.zip',
@@ -76,7 +76,9 @@ export const createExecuter = async () => {
         isLogFiles: process.argv.includes('--log-files'),
     }
 
-    const executer: Executer = yamlConfig.config.project_type === 'iis' ? createIISExecuter(cfg) : createLaravelExecuter(cfg);
+    const executer: Executer = yamlConfig.config.project_type === 'iis'
+        ? createIISExecuter(cfg)
+        : createLaravelExecuter(cfg);
 
     const baseUtils = createExecuterUtils(cfg, executer);
     const predefinedImpls: TPredefinedImplementations = {
@@ -99,9 +101,9 @@ export const createExecuter = async () => {
                 if ('predefined' in step) {
                     const method = step.predefined;
                     const name = typeof method === 'string' ? method : method.method;
-                    if(typeof method === 'string'){
+                    if (typeof method === 'string') {
                         await predefinedImpls[name]();
-                    }else{
+                    } else {
                         await predefinedImpls[name](method);
                     }
                 } else if ('shell' in step) {
@@ -141,9 +143,10 @@ async function localSleep(method: TPredefinedX<'local:sleep'>): Promise<void> {
     logInfo(`\n-> sleeping ${method.ms} ms`);
     await sleep(Number(method.ms));
 }
+
 async function serverDeleteZip(baseUtils: ExecuterUtils, executer: Executer): Promise<void> {
     logInfo(`\n-> Deleting ${consts.zipFileName} on the server using SSH...`);
-    await baseUtils.runShellSsh({command: executer.sshDeleteCommand + ' ' + consts.zipFileName});
+    await baseUtils.runShellSsh({ command: executer.sshDeleteCommand + ' ' + consts.zipFileName });
 }
 async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TConfig, baseUtils: ExecuterUtils, executer: Executer, compress: boolean): Promise<{newFiles: TFileToUpload[], zipPath: string | null}> {
     let filesFromServer: TFileFromServer[] = [];
@@ -236,7 +239,7 @@ async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TConfig, base
 
     return {newFiles, zipPath: null};
 }
-async function serverRestartIISSite(method: TPredefinedX<'server:restart_iis_site'>, baseUtils: ExecuterUtils): Promise<void> {
+async function serverRestartIISSite(method: {pool: string, site: string}, baseUtils: ExecuterUtils): Promise<void> {
     const p = method.pool;
     const s = method.site;
     logInfo(`\n-> restarting app pool (${p}) and site (${s})`);
@@ -246,7 +249,7 @@ async function serverRestartIISSite(method: TPredefinedX<'server:restart_iis_sit
 }
 async function serverUnzip(baseUtils: ExecuterUtils, executer: Executer): Promise<void> {
     logInfo('\n-> Unzipping on the server using SSH...');
-    await baseUtils.runShellSsh({command: executer.sshUnzipCommand + ' ' + consts.zipFileName});
+    await baseUtils.runShellSsh({ command: executer.sshUnzipCommand + ' ' + consts.zipFileName });
 }
 async function serverUploadFiles(baseUtils: ExecuterUtils): Promise<void> {
     await baseUtils.uploadZipFile();
