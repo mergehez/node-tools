@@ -17,7 +17,7 @@ export const createExecuterUtils = (baseCfg: ExecuterConfig, platformExecuter: E
     }
 })
 
-async function runShellSsh(cfg: ShellProps, prependCd = true, baseCfg: ExecuterConfig, platformExecuter: Executer): Promise<string> {
+async function runShellSsh(cfg: ShellProps, prependCd: boolean, baseCfg: ExecuterConfig, platformExecuter: Executer): Promise<string> {
     if (!prependCd || cfg.command.startsWith('cd '))
         return await runShell(cfg, baseCfg.ssh);
     cfg.command = platformExecuter.sshPrependCdToCommand(cfg.command);
@@ -55,6 +55,8 @@ function compressFilesForUpload(files: TFileToUpload[], dirsToGroup: string[], b
     const zipPath = fsPath.join(baseCfg.source_basepath, consts.zipFileName);
     logInfo(`\n-> Creating '${zipPath}'.`);
     fs.writeFileSync(zipPath, zip.toBuffer());
+
+    return zipPath;
 }
 
 async function uploadZipFile(baseCfg: ExecuterConfig) {
@@ -62,8 +64,9 @@ async function uploadZipFile(baseCfg: ExecuterConfig) {
         logInfo('\n-> Uploading files:');
         const remotePath = baseCfg.target_basepath.substring(baseCfg.ftpInfo.base_path.length).replace('//', '/');
         const sourcePath = fsPath.join(baseCfg.source_basepath, consts.zipFileName).replace('//', '/');
+        const cmd = `ncftpput -R -v -u "${baseCfg.ftpInfo.username}" -p "${baseCfg.ftpInfo.password}" ${baseCfg.host} ${remotePath} ${sourcePath}`;
         await runShell({
-            command: `ncftpput -R -v -u "${baseCfg.ftpInfo.username}" -p "${baseCfg.ftpInfo.password}" ${baseCfg.host} ${remotePath} ${sourcePath}`,
+            command: cmd,
             on_error: 'ignore',
             ignore_stdout: false,
             onError: (err) => {
