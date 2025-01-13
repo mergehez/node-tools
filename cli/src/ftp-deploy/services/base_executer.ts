@@ -80,15 +80,17 @@ export const createExecuter = async () => {
 
     const baseUtils = createExecuterUtils(cfg, executer);
     const predefinedImpls: TPredefinedImplementations = {
-        "local:dispose_ssh":        () => localDisposeSSH(cfg),
-        "local:exit_if_dry_run":    () => localExitIfDryRun(cfg),
-        "local:finish":             () => localFinish(startTime),
-        "server:delete_zip":        () => serverDeleteZip(baseUtils, executer),
-        "server:find_new_files":    () => serverFindNewFiles(cfg, yamlConfig, baseUtils, executer),
-        "server:unzip":             () => serverUnzip(baseUtils, executer),
-        "server:upload_files":      () => serverUploadFiles(baseUtils),
-        "local:sleep":              (method: TPredefinedX<'local:sleep'>) => localSleep(method),
-        "server:restart_iis_site":  (method: TPredefinedX<'server:restart_iis_site'>) => serverRestartIISSite(method, baseUtils),
+        "local:dispose_ssh": () => localDisposeSSH(cfg),
+        "local:exit_if_dry_run": () => localExitIfDryRun(cfg),
+        "local:finish": () => localFinish(startTime),
+        "server:delete_zip": () => serverDeleteZip(baseUtils, executer),
+        "server:find_new_files": async () => {
+            await serverFindNewFiles(cfg, yamlConfig.config, baseUtils, executer, true);
+        },
+        "server:unzip": () => serverUnzip(baseUtils, executer),
+        "server:upload_files": () => serverUploadFiles(baseUtils),
+        "local:sleep": (method: TPredefinedX<'local:sleep'>) => localSleep(method),
+        "server:restart_iis_site": (method: TPredefinedX<'server:restart_iis_site'>) => serverRestartIISSite(method, baseUtils),
     };
 
     return {
@@ -143,13 +145,13 @@ async function serverDeleteZip(baseUtils: ExecuterUtils, executer: Executer): Pr
     logInfo(`\n-> Deleting ${consts.zipFileName} on the server using SSH...`);
     await baseUtils.runShellSsh({command: executer.sshDeleteCommand + ' ' + consts.zipFileName});
 }
-async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TYamlConfig, baseUtils: ExecuterUtils, executer: Executer): Promise<void> {
+async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TConfig, baseUtils: ExecuterUtils, executer: Executer, compress: boolean): Promise<{newFiles: TFileToUpload[], zipPath: string | null}> {
     let filesFromServer: TFileFromServer[] = [];
     const newFiles: TFileToUpload[] = [];
     // const localUtcDiffInSec = new Date(0).getTimezoneOffset() * 60
 
     const localConsts = (process.platform === 'win32' ? windows_consts : unix_consts);
-    const tzResLocal = (await runShell({command: localConsts.time.tzDiffCommand, ignore_stdout: true})).split(localConsts.eol).filter(t => t.trim())[0].trim();
+    const tzResLocal = (await runShell({ command: localConsts.time.tzDiffCommand, ignore_stdout: true })).split(localConsts.eol).filter(t => t.trim())[0].trim();
     const localUtcDiffInSec = baseUtils.getUtcDiff(localConsts.time.parseHour(tzResLocal));
     if (!cfg.isFresh) {
         const tzRes = (await baseUtils.runShellSsh({
@@ -169,7 +171,7 @@ async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TYamlConfig, 
         },
         ignore: cfg.ig,
         objectCreator: (data) => {
-            const {path: fullPath, trimmedPath, stat} = data;
+            const { path: fullPath, trimmedPath, stat } = data;
 
             if (cfg.isFresh) {
                 return {
@@ -212,7 +214,7 @@ async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TYamlConfig, 
                 log("    local: " + cTime + ' (' + unixTsToDate(cTime) + ") - " + ', ' + mTime + ' (' + unixTsToDate(mTime) + ") - " + stat.size + ' bytes', 'blue');
                 log("     diff: " + Math.round((mTime - remote.mtime)) + 's ' + Math.round((mTime - remote.mtime) / 60) + 'm ' + Math.round((mTime - remote.mtime) / 60 / 60) + 'h', 'blue');
             }
-            if (remote.size === stat.size && mTime <= remote.mtime && (!remote.ctime || mTime <= remote.ctime+60)) // compare remote.mtime with local.ctime. because ctime on remote is actually mtime on local when last uploaded
+            if (remote.size === stat.size && mTime <= remote.mtime && (!remote.ctime || mTime <= remote.ctime + 60)) // compare remote.mtime with local.ctime. because ctime on remote is actually mtime on local when last uploaded
                 return null;
 
             return {
@@ -227,7 +229,12 @@ async function serverFindNewFiles(cfg: ExecuterConfig, yamlConfig: TYamlConfig, 
         process.exit();
     }
 
-    baseUtils.compressFilesForUpload(newFiles, yamlConfig.config.dist_dirs);
+    if(compress){
+        const zipPath = baseUtils.compressFilesForUpload(newFiles, yamlConfig.dist_dirs);
+        return {newFiles, zipPath};
+    }
+
+    return {newFiles, zipPath: null};
 }
 async function serverRestartIISSite(method: TPredefinedX<'server:restart_iis_site'>, baseUtils: ExecuterUtils): Promise<void> {
     const p = method.pool;
