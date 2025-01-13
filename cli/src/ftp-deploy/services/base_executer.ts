@@ -39,12 +39,7 @@ export type ExecuterConfig = {
     isLogFiles: boolean;
 }
 
-export type ExecuterUtils = {
-    compressFilesForUpload: (files: TFileToUpload[], dirsToGroup: string[]) => void;
-    runShellSsh: (cfg: ShellProps, prependCd?: boolean) => Promise<string>;
-    uploadZipFile: () => Promise<void>
-    getUtcDiff: (hourToCompare: number) => number
-}
+export type ExecuterUtils = ReturnType<typeof createExecuterUtils>;
 
 export const createExecuter = async () => {
     const startTime = performance.now();

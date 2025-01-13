@@ -7,9 +7,9 @@ import fsPath from "node:path";
 import {EOL} from "node:os";
 import {consts, Executer, ExecuterConfig, ExecuterUtils} from "./services/base_executer";
 
-export const createExecuterUtils = (baseCfg: ExecuterConfig, platformExecuter: Executer): ExecuterUtils => ({
-    runShellSsh: (cfg, prependCd) => runShellSsh(cfg, prependCd, baseCfg, platformExecuter),
-    compressFilesForUpload: (files, dirsToGroup) => compressFilesForUpload(files, dirsToGroup, baseCfg),
+export const createExecuterUtils = (baseCfg: ExecuterConfig, platformExecuter: Executer) => ({
+    runShellSsh: (cfg?: ShellProps, prependCd?: boolean) => runShellSsh(cfg, prependCd, baseCfg, platformExecuter),
+    compressFilesForUpload: (files: TFileToUpload[], dirsToGroup: string[]) => compressFilesForUpload(files, dirsToGroup, baseCfg),
     uploadZipFile: () => uploadZipFile(baseCfg),
     getUtcDiff: (hourToCompare: number) => {
         const utcHour = parseInt(new Date().toISOString().split('T')[1].split(':')[0]);
