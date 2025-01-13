@@ -6,22 +6,30 @@ import prompts from "prompts";
 import {NodeSSH} from "node-ssh";
 import {EOL} from "node:os";
 
+type TLog = typeof log;
 export type ShellProps = {
     ssh?: boolean,
     command: string,
-    message?: string,
+    message?: string |
+         ((props: ShellProps, log: TLog) => void) |
+         [Parameters<TLog>[1], string],
     on_error?: 'throw' | 'print' | 'ignore', // print: print but don't throw. (default: throw)
     ignore_stdout?: boolean,
     return_error?: boolean,
     onError?: (err: any) => void,
 }
 
-
 // if ignore_stdout is false, it will return the output of the command. (only for local shell)
 export async function runShell(props: ShellProps, ssh?: NodeSSH): Promise<string> {
     const {command: cmd, message, on_error, ignore_stdout} = props;
-    if (message)
-        log(message);
+    if(message){
+        if(typeof message === 'string')
+            log(message);
+        else if(Array.isArray(message))
+            log(message[1], message[0]);
+        else
+            message(props, log);
+    }
 
     if (process.argv.includes('--act')) {
         log(`->ACT shell: ${cmd}`, 'cyan')
